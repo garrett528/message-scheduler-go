@@ -1,0 +1,95 @@
+version: "2.1"
+
+services:
+
+  ###############################################################
+  #    Kafka for ingress and egress
+  ###############################################################
+
+  zookeeper:
+    image: docker.io/bitnami/zookeeper:3.8
+    ports:
+      - "2181:2181"
+    volumes:
+      - "zookeeper_data:/bitnami"
+    environment:
+      - ALLOW_ANONYMOUS_LOGIN=yes
+  
+  kafka:
+    image: docker.io/bitnami/kafka:3.3
+    ports:
+      - "9092:9092"
+    volumes:
+      - "kafka_data:/bitnami"
+    environment:
+      - KAFKA_CFG_ZOOKEEPER_CONNECT=zookeeper:2181
+      - ALLOW_PLAINTEXT_LISTENER=yes
+    depends_on:
+      - zookeeper
+
+  kafka-ui:
+    container_name: kafka-ui
+    image: provectuslabs/kafka-ui:latest
+    ports:
+      - 8080:8080
+    depends_on:
+      - kafka
+    environment:
+      KAFKA_CLUSTERS_0_NAME: local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
+
+  kafka-init-topics:
+    image: docker.io/bitnami/kafka:3.3
+    depends_on:
+      - kafka
+    command: >
+      sh -c "./opt/bitnami/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --list &&
+             ./opt/bitnami/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic scheduled_notifications --replication-factor 1 --partitions 1 &&
+             ./opt/bitnami/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic ingest_out --replication-factor 1 --partitions 1"
+
+  rest-proxy:
+    image: confluentinc/cp-kafka-rest:7.3.0
+    depends_on:
+      - kafka
+    ports:
+      - 8082:8082
+    hostname: rest-proxy
+    container_name: rest-proxy
+    environment:
+      KAFKA_REST_HOST_NAME: rest-proxy
+      KAFKA_REST_BOOTSTRAP_SERVERS: 'kafka:9092'
+      KAFKA_REST_LISTENERS: "http://0.0.0.0:8082"
+  
+  ###############################################################
+  #    StateFun runtime
+  ###############################################################
+
+  statefun:
+    image: apache/flink-statefun-playground:3.2.0
+    ports:
+      - "8081:8081"
+    environment:
+      LOG_LEVEL: debug
+    depends_on:
+      - kafka
+      - kafka-init-topics
+    volumes:
+      - ./ingester/module.yaml:/module.yaml
+
+  ###############################################################
+  # Forward a port 8000 from the host's machine
+  ###############################################################
+
+  host-machine:
+    image: qoomon/docker-host@sha256:e0f021dd77c7c26d37b825ab2cbf73cd0a77ca993417da80a14192cb041937b0
+    cap_add: [ 'NET_ADMIN', 'NET_RAW' ]
+    mem_limit: 8M
+    restart: on-failure
+    environment:
+      PORTS: 8000
+
+volumes:
+  zookeeper_data:
+    driver: local
+  kafka_data:
+    driver: local
