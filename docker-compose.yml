@@ -7,6 +7,7 @@ services:
   ###############################################################
 
   zookeeper:
+    container_name: zookeeper
     image: docker.io/bitnami/zookeeper:3.8
     ports:
       - "2181:2181"
@@ -16,16 +17,21 @@ services:
       - ALLOW_ANONYMOUS_LOGIN=yes
   
   kafka:
+    container_name: kafka
     image: docker.io/bitnami/kafka:3.3
     ports:
       - "9092:9092"
+      - "29092:29092"
+    depends_on:
+      - zookeeper
     volumes:
       - "kafka_data:/bitnami"
     environment:
       - KAFKA_CFG_ZOOKEEPER_CONNECT=zookeeper:2181
       - ALLOW_PLAINTEXT_LISTENER=yes
-    depends_on:
-      - zookeeper
+      - KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT 
+      - KAFKA_LISTENERS=PLAINTEXT://:9092,PLAINTEXT_HOST://:29092 
+      - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092
 
   kafka-ui:
     container_name: kafka-ui
@@ -39,6 +45,7 @@ services:
       KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
 
   kafka-init-topics:
+    container_name: kafka-init-topics
     image: docker.io/bitnami/kafka:3.3
     depends_on:
       - kafka
@@ -47,24 +54,41 @@ services:
              ./opt/bitnami/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic scheduled_notifications --replication-factor 1 --partitions 1 &&
              ./opt/bitnami/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic ingest_out --replication-factor 1 --partitions 1"
 
-  rest-proxy:
-    image: confluentinc/cp-kafka-rest:7.3.0
-    depends_on:
-      - kafka
+  # rest-proxy:
+  #   container_name: rest-proxy
+  #   image: confluentinc/cp-kafka-rest:7.3.0
+  #   ports:
+  #     - 8082:8082
+  #   hostname: rest-proxy
+  #   depends_on:
+  #     - kafka
+  #   environment:
+  #     KAFKA_REST_HOST_NAME: rest-proxy
+  #     KAFKA_REST_BOOTSTRAP_SERVERS: 'kafka:9092'
+  #     KAFKA_REST_LISTENERS: "http://0.0.0.0:8082"
+
+  ###############################################################
+  # Redis for priority queue
+  ###############################################################
+  
+  redis:
+    container_name: redis
+    image: docker.io/bitnami/redis:7.0
     ports:
-      - 8082:8082
-    hostname: rest-proxy
-    container_name: rest-proxy
+      - '6379:6379'
+    volumes:
+      - 'redis_data:/bitnami/redis/data'
     environment:
-      KAFKA_REST_HOST_NAME: rest-proxy
-      KAFKA_REST_BOOTSTRAP_SERVERS: 'kafka:9092'
-      KAFKA_REST_LISTENERS: "http://0.0.0.0:8082"
+      # ALLOW_EMPTY_PASSWORD is recommended only for development.
+      - ALLOW_EMPTY_PASSWORD=yes
+      - REDIS_DISABLE_COMMANDS=FLUSHDB,FLUSHALL
   
   ###############################################################
   #    StateFun runtime
   ###############################################################
 
   statefun:
+    container_name: statefun
     image: apache/flink-statefun-playground:3.2.0
     ports:
       - "8081:8081"
@@ -73,6 +97,7 @@ services:
     depends_on:
       - kafka
       - kafka-init-topics
+      - redis
     volumes:
       - ./ingester/module.yaml:/module.yaml
 
@@ -81,6 +106,7 @@ services:
   ###############################################################
 
   host-machine:
+    container_name: host-machine
     image: qoomon/docker-host@sha256:e0f021dd77c7c26d37b825ab2cbf73cd0a77ca993417da80a14192cb041937b0
     cap_add: [ 'NET_ADMIN', 'NET_RAW' ]
     mem_limit: 8M
@@ -92,4 +118,6 @@ volumes:
   zookeeper_data:
     driver: local
   kafka_data:
+    driver: local
+  redis_data:
     driver: local
