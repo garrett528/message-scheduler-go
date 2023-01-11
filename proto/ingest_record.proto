@@ -4,19 +4,23 @@ package message_scheduler;
 option go_package = "proto/gen";
 
 message IngestRecord {
-    string correlationId = 1;
-  
-    enum MessageType {
-      PUSH_NOTIFICATION = 0;
-      EMAIL = 1;
-    }
+  repeated ScheduledNotification scheduledNotifications = 1;
+}
 
-    MessageType messageType = 2;
-    int64 scheduledTimeMillis = 3;
+message ScheduledNotification {
+  string correlationId = 1;
 
-    message Metadata {
-        string message = 1;
-    }
-  
-    Metadata metadata = 4;
+  enum MessageType {
+    PUSH_NOTIFICATION = 0;
+    EMAIL = 1;
+  }
+
+  MessageType messageType = 2;
+  int64 scheduledTimeMillis = 3;
+
+  message Metadata {
+      string message = 1;
+  }
+
+  Metadata metadata = 4;
 }

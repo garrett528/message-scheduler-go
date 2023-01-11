@@ -1,5 +1,7 @@
 package models
 
 type EgressRecord struct {
-	ScheduledStatus string `json:"scheduledStatus"`
+	CorrelationId       string `json:"correlationId"`
+	ScheduledStatus     string `json:"scheduledStatus"`
+	ScheduledTimeMillis int64  `json:"scheduledTimeMillis"`
 }

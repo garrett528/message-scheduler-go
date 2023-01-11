@@ -15,7 +15,7 @@ import (
 
 var (
 	brokers     = flag.String("brokers", "localhost:29092", "The Kafka brokers to connect to, as a comma separated list")
-	numMsg      = flag.Int("numMsg", 1, "Number of messages to generate for testing")
+	numMsg      = flag.Int("numMsg", 52, "Number of messages to generate for testing")
 	ingestTopic = flag.String("ingestTopic", "scheduled_notifications", "Ingestion topic name")
 )
 
@@ -67,35 +67,46 @@ func newProducer(brokerList []string) sarama.SyncProducer {
 func generateMessages(iterations int, topic string) []*sarama.ProducerMessage {
 	var msgs []*sarama.ProducerMessage
 
+	notificationsPerMessage := 25
+
+	ingestRecord := gen.IngestRecord{}
+	batchNum := 1
 	for i := 0; i < iterations; i++ {
 		correlationId := fmt.Sprintf("correlationId%d", i)
 		scheduledTimeMillis := time.Now().UnixMilli()
 
-		var messageType gen.IngestRecord_MessageType
+		var messageType gen.ScheduledNotification_MessageType
 		if i%2 == 0 {
-			messageType = gen.IngestRecord_PUSH_NOTIFICATION
+			messageType = gen.ScheduledNotification_PUSH_NOTIFICATION
 		} else {
-			messageType = gen.IngestRecord_EMAIL
+			messageType = gen.ScheduledNotification_EMAIL
 		}
 
-		ingestRecord := &gen.IngestRecord{
+		scheduledNotification := &gen.ScheduledNotification{
 			CorrelationId:       correlationId,
 			ScheduledTimeMillis: scheduledTimeMillis,
 			MessageType:         messageType,
 		}
 
-		ingestRecordBytes, err := proto.Marshal(ingestRecord)
-		if err != nil {
-			log.Fatalln("Failed to marshal ingestRecord:", err)
-		}
+		ingestRecord.ScheduledNotifications = append(ingestRecord.ScheduledNotifications, scheduledNotification)
 
-		msg := &sarama.ProducerMessage{
-			Topic: topic,
-			Key:   sarama.StringEncoder(correlationId),
-			Value: sarama.ByteEncoder(ingestRecordBytes),
-		}
+		if (i+1)%notificationsPerMessage == 0 || i == (iterations-1) {
+			ingestRecordBytes, err := proto.Marshal(&ingestRecord)
+			if err != nil {
+				log.Fatalln("Failed to marshal ingestRecord:", err)
+			}
 
-		msgs = append(msgs, msg)
+			batch := fmt.Sprintf("batch%d", batchNum)
+			msg := &sarama.ProducerMessage{
+				Topic: topic,
+				Key:   sarama.StringEncoder(batch),
+				Value: sarama.ByteEncoder(ingestRecordBytes),
+			}
+
+			msgs = append(msgs, msg)
+			batchNum += 1
+			ingestRecord = gen.IngestRecord{}
+		}
 	}
 
 	return msgs
