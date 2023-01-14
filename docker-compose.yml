@@ -87,6 +87,15 @@ services:
   #    StateFun runtime
   ###############################################################
 
+  ingester:
+    container_name: ingester
+    build:
+      context: .
+      dockerfile: Dockerfile_ingester
+    image: garrett528/ingester
+    ports:
+      - "8000:8000"
+
   statefun:
     container_name: statefun
     image: apache/flink-statefun-playground:3.2.0
@@ -98,6 +107,7 @@ services:
       - kafka
       - kafka-init-topics
       - redis
+      - ingester
     volumes:
       - ./ingester/module.yaml:/module.yaml
 

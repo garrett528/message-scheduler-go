@@ -1,7 +1,8 @@
 kind: io.statefun.endpoints.v2/http
 spec:
   functions: message-scheduler-go/*
-  urlPathTemplate: http://host-machine:8000/statefun
+  # urlPathTemplate: http://host-machine:8000/statefun
+  urlPathTemplate: http://ingester:8000/statefun
   transport:
     type: io.statefun.transports.v1/async
 ---

@@ -12,3 +12,7 @@ run-producer:
 .PHONY: get-scheduled-notifications
 get-scheduled-notifications:
 	redis-cli ZRANGE scheduled_notifications 0 -1 WITHSCORES
+
+.PHONY: build-ingester-image
+build-ingester-image:
+	docker build -f Dockerfile_ingester .

@@ -1,0 +1,16 @@
+FROM golang:1.19
+
+WORKDIR /github.com/garrett528/message-scheduler-go
+
+COPY go.mod ./
+COPY go.sum ./
+RUN go mod download
+
+COPY ingester/ ./ingester/
+COPY proto/gen/ ./proto/gen/
+
+RUN go install ./ingester/cmd
+RUN mv $GOPATH/bin/cmd ./app
+# RUN ls -la ./*
+
+CMD [ "./app" ]

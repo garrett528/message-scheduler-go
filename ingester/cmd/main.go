@@ -11,7 +11,7 @@ import (
 
 func main() {
 
-	redisHost := flag.String("redisHost", "localhost", "Redis host")
+	redisHost := flag.String("redisHost", "redis", "Redis host")
 	redisPort := flag.String("redisPort", "6379", "Redis port")
 
 	flag.Parse()
