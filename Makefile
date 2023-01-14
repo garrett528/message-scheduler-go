@@ -15,4 +15,4 @@ get-scheduled-notifications:
 
 .PHONY: build-ingester-image
 build-ingester-image:
-	docker build -f Dockerfile_ingester .
+	docker-compose build ingester

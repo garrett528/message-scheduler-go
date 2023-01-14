@@ -11,8 +11,9 @@ message ScheduledNotification {
   string correlationId = 1;
 
   enum MessageType {
-    PUSH_NOTIFICATION = 0;
-    EMAIL = 1;
+    UNSPECIFIED = 0;
+    PUSH_NOTIFICATION = 1;
+    EMAIL = 2;
   }
 
   MessageType messageType = 2;

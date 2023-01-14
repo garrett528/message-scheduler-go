@@ -27,8 +27,10 @@ func HandleMessage(ctx context.Context, record *gen.IngestRecord, client *redis.
 
 		pipe.ZAdd(ctx, "scheduled_notifications", redis.Z{
 			Score:  float64(notification.ScheduledTimeMillis),
-			Member: notificationJson,
+			Member: notification.CorrelationId,
 		})
+
+		pipe.Set(ctx, notification.CorrelationId, notificationJson, 0)
 
 		egressRecord := &models.EgressRecord{
 			CorrelationId:       notification.CorrelationId,
