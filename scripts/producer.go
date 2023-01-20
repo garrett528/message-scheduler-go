@@ -15,7 +15,7 @@ import (
 
 var (
 	brokers     = flag.String("brokers", "localhost:29092", "The Kafka brokers to connect to, as a comma separated list")
-	numMsg      = flag.Int("numMsg", 52, "Number of messages to generate for testing")
+	numMsg      = flag.Int("numMsg", 1000, "Number of messages to generate for testing")
 	ingestTopic = flag.String("ingestTopic", "scheduled_notifications", "Ingestion topic name")
 )
 

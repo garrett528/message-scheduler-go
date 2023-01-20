@@ -52,7 +52,8 @@ services:
     command: >
       sh -c "./opt/bitnami/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --list &&
              ./opt/bitnami/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic scheduled_notifications --replication-factor 1 --partitions 1 &&
-             ./opt/bitnami/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic ingest_out --replication-factor 1 --partitions 1"
+             ./opt/bitnami/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic ingest_out --replication-factor 1 --partitions 1 &&
+             ./opt/bitnami/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic scheduled_out --replication-factor 1 --partitions 1"
 
   # rest-proxy:
   #   container_name: rest-proxy
@@ -87,15 +88,6 @@ services:
   #    StateFun runtime
   ###############################################################
 
-  ingester:
-    container_name: ingester
-    build:
-      context: .
-      dockerfile: Dockerfile_ingester
-    image: garrett528/ingester
-    ports:
-      - "8000:8000"
-
   statefun:
     container_name: statefun
     image: apache/flink-statefun-playground:3.2.0
@@ -112,17 +104,30 @@ services:
       - ./ingester/module.yaml:/module.yaml
 
   ###############################################################
+  # Message scheduler go containers
+  ###############################################################
+
+  ingester:
+    container_name: ingester
+    build:
+      context: .
+      dockerfile: Dockerfile_ingester
+    image: garrett528/ingester
+    ports:
+      - "8000:8000"
+
+  ###############################################################
   # Forward a port 8000 from the host's machine
   ###############################################################
 
-  host-machine:
-    container_name: host-machine
-    image: qoomon/docker-host@sha256:e0f021dd77c7c26d37b825ab2cbf73cd0a77ca993417da80a14192cb041937b0
-    cap_add: [ 'NET_ADMIN', 'NET_RAW' ]
-    mem_limit: 8M
-    restart: on-failure
-    environment:
-      PORTS: 8000
+  # host-machine:
+  #   container_name: host-machine
+  #   image: qoomon/docker-host@sha256:e0f021dd77c7c26d37b825ab2cbf73cd0a77ca993417da80a14192cb041937b0
+  #   cap_add: [ 'NET_ADMIN', 'NET_RAW' ]
+  #   mem_limit: 8M
+  #   restart: on-failure
+  #   environment:
+  #     PORTS: 8000
 
 volumes:
   zookeeper_data:
