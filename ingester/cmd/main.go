@@ -12,6 +12,7 @@ import (
 func main() {
 	redisHost := flag.String("redisHost", "redis", "Redis host")
 	redisPort := flag.String("redisPort", "6379", "Redis port")
+	redisKey := flag.String("redisKey", "scheduled_notifications", "Key for Redis sorted set containing scheduled payloads")
 
 	flag.Parse()
 
@@ -26,6 +27,7 @@ func main() {
 	app := &App{
 		StatefunBuilder: statefun.StatefulFunctionsBuilder(),
 		Redis:           rdb,
+		redisKey:        *redisKey,
 	}
 
 	_ = app.StatefunBuilder.WithSpec(statefun.StatefulFunctionSpec{

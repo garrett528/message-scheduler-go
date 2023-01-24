@@ -9,7 +9,7 @@ import (
 	"github.com/go-redis/redis/v9"
 )
 
-func HandleMessage(ctx context.Context, record *gen.IngestRecord, client *redis.Client) []*models.EgressRecord {
+func HandleMessage(ctx context.Context, record *gen.IngestRecord, client *redis.Client, redisKey string) []*models.EgressRecord {
 	var egressRecords []*models.EgressRecord
 	pipe := client.Pipeline()
 
@@ -25,7 +25,7 @@ func HandleMessage(ctx context.Context, record *gen.IngestRecord, client *redis.
 			continue
 		}
 
-		pipe.ZAdd(ctx, "scheduled_notifications", redis.Z{
+		pipe.ZAdd(ctx, redisKey, redis.Z{
 			Score:  float64(notification.ScheduledTimeMillis),
 			Member: notification.CorrelationId,
 		})

@@ -21,7 +21,7 @@ func (app *App) Ingest(ctx statefun.Context, message statefun.Message) error {
 		return fmt.Errorf("failed to deserialize ingest record: %w", err)
 	}
 
-	egressRecords := message_handler.HandleMessage(ctx, &ingestRecord, app.Redis)
+	egressRecords := message_handler.HandleMessage(ctx, &ingestRecord, app.Redis, app.redisKey)
 
 	for _, egressRecord := range egressRecords {
 		ctx.SendEgress(&statefun.KafkaEgressBuilder{

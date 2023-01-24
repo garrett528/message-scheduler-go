@@ -8,4 +8,5 @@ import (
 type App struct {
 	StatefunBuilder statefun.StatefulFunctions
 	Redis           *redis.Client
+	redisKey        string
 }
